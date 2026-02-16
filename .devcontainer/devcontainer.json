@@ -119,7 +119,7 @@
   // Install Shopify CLI (only runs on first container creation)
   // Checks if already installed to avoid redundant installs
   // Note: Dracula Pro VSIX will be installed manually once (persists in container)
-  "postCreateCommand": "command -v shopify >/dev/null 2>&1 || (gem install shopify-cli && npm install -g @shopify/cli @shopify/theme)",
+  "postCreateCommand": "command -v shopify >/dev/null 2>&1 || (npm install -g @shopify/cli@latest)",
 
   // Use node user instead of root
   "remoteUser": "node"
