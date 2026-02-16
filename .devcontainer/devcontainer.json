@@ -1,0 +1,126 @@
+{
+  "name": "Shopify Aribike Theme Development",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-20-bookworm",
+
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/ruby:1": {
+      "version": "3.2"
+    },
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "configureZshAsDefaultShell": true
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      // Extensions - includes themes, icons, and Shopify tools
+      "extensions": [
+        // Themes & Icons
+        "PKief.material-icon-theme",
+
+        // Shopify Development
+        "Shopify.theme-check-vscode",
+        "sissel.shopify-liquid",
+
+        // Code Quality
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+
+        // Utilities
+        "formulahendry.auto-rename-tag",
+        "christian-kohler.path-intellisense",
+        "usernamehw.errorlens",
+        "wayou.vscode-todo-highlight"
+      ],
+
+      // Settings - automatically applied when in container
+      "settings": {
+        // === THEME CONFIGURATION (dynamic - auto-applies) ===
+        "workbench.colorTheme": "Dracula Pro (Van Helsing)",
+        "workbench.iconTheme": "material-icon-theme",
+
+        // === FONT CONFIGURATION ===
+        // JetBrainsMono Nerd Font with fallback to macOS default fonts
+        // See install-fonts.sh script to auto-install JetBrainsMono Nerd Font on new Macs
+        "editor.fontFamily": "'JetBrainsMono Nerd Font Mono', 'JetBrains Mono', 'SF Mono', Menlo, Monaco, monospace",
+        "editor.fontSize": 14,
+        "editor.fontLigatures": true,
+        "terminal.integrated.fontFamily": "'JetBrainsMono Nerd Font Mono', 'JetBrains Mono', 'SF Mono', Menlo, Monaco",
+        "terminal.integrated.fontSize": 13,
+
+        // === EDITOR PREFERENCES ===
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.tabSize": 2,
+        "editor.insertSpaces": true,
+        "editor.wordWrap": "on",
+        "editor.minimap.enabled": true,
+        "editor.bracketPairColorization.enabled": true,
+        "editor.guides.bracketPairs": true,
+        "editor.cursorBlinking": "smooth",
+        "editor.smoothScrolling": true,
+
+        // === LIQUID SPECIFIC ===
+        "[liquid]": {
+          "editor.defaultFormatter": "Shopify.theme-check-vscode",
+          "editor.formatOnSave": true
+        },
+
+        // === FILES ===
+        "files.autoSave": "onFocusChange",
+        "files.trimTrailingWhitespace": true,
+        "files.insertFinalNewline": true,
+        "files.associations": {
+          "*.liquid": "liquid"
+        },
+
+        // === SHOPIFY THEME CHECK ===
+        "themeCheck.checkOnSave": true,
+        "themeCheck.checkOnChange": true,
+
+        // === GIT ===
+        "git.autofetch": true,
+        "git.confirmSync": false,
+        "git.enableSmartCommit": true,
+
+        // === PRETTIER ===
+        "prettier.tabWidth": 2,
+        "prettier.useTabs": false,
+        "prettier.singleQuote": true,
+
+        // === TERMINAL ===
+        "terminal.integrated.defaultProfile.linux": "bash",
+
+        // === BREADCRUMBS ===
+        "breadcrumbs.enabled": true,
+
+        // === TODO HIGHLIGHT ===
+        "todohighlight.keywords": [
+          {
+            "text": "TODO:",
+            "color": "#fff",
+            "backgroundColor": "#ffbd2e"
+          },
+          {
+            "text": "FIXME:",
+            "color": "#fff",
+            "backgroundColor": "#f06292"
+          }
+        ]
+      }
+    }
+  },
+
+  // Port forwarding for Shopify theme server
+  "forwardPorts": [9292],
+
+  // Install Shopify CLI (only runs on first container creation)
+  // Checks if already installed to avoid redundant installs
+  // Note: Dracula Pro VSIX will be installed manually once (persists in container)
+  "postCreateCommand": "command -v shopify >/dev/null 2>&1 || (gem install shopify-cli && npm install -g @shopify/cli @shopify/theme)",
+
+  // Use node user instead of root
+  "remoteUser": "node"
+}
