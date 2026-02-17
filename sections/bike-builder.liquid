@@ -158,40 +158,53 @@
         </div>
 
         {%- comment -%} Steps 2-N: Upgrade categories {%- endcomment -%}
-        {%- assign step_index = 1 -%}
-        {% if upgrade_categories %}
-          {% for category in upgrade_categories %}
-            {% assign cat_collection = category.collection.value %}
-            {% if cat_collection and cat_collection.products.size > 0 %}
+        <div ref="upgradeStepsContainer">
+          {%- assign step_index = 1 -%}
+          {% for handle in upgrade_handles %}
+            {% assign metaobj = current_variant.metafields.custom[handle].value %}
+            {% if metaobj != blank %}
+              {% assign upgrade_product = metaobj.products.value %}
+              {% assign cat_title = metaobj.title | default: handle %}
               <div class="bike-builder__step" data-step="{{ step_index }}" data-step-visible="false" ref="steps[]">
-                <h2 class="bike-builder__step-title">{{ category.name }}</h2>
-                {% if category.description %}
-                  <p class="bike-builder__step-description">{{ category.description }}</p>
-                {% endif %}
+                <h2 class="bike-builder__step-title">{{ cat_title }}</h2>
 
                 <div class="bike-builder__upgrade-grid">
                   {%- comment -%} Keep Stock option {%- endcomment -%}
                   <label class="bike-builder__upgrade-card bike-builder__upgrade-card--stock">
                     <input
                       type="radio"
-                      name="upgrade-category-{{ step_index }}"
+                      name="upgrade-{{ handle }}"
                       value=""
                       data-upgrade-title="Keep Stock"
                       data-upgrade-price="0"
-                      data-upgrade-category-index="{{ step_index }}"
+                      data-upgrade-handle="{{ handle }}"
                       class="visually-hidden"
                       checked
                       on:change="/handleUpgradeSelect"
                     >
                     <div class="bike-builder__upgrade-card-inner">
-                      <div class="bike-builder__upgrade-card-media bike-builder__upgrade-card-media--stock">
-                        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                          <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3"/>
-                          <path d="M17 24h14M24 17v14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                        </svg>
-                      </div>
+                      {% if metaobj.default_product_image %}
+                        <div class="bike-builder__upgrade-card-media">
+                          {{
+                            metaobj.default_product_image
+                            | image_url: width: 400
+                            | image_tag:
+                              loading: 'lazy',
+                              widths: '200, 400',
+                              sizes: '(min-width: 750px) 200px, 50vw',
+                              class: 'bike-builder__upgrade-card-image'
+                          }}
+                        </div>
+                      {% else %}
+                        <div class="bike-builder__upgrade-card-media bike-builder__upgrade-card-media--stock">
+                          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3"/>
+                            <path d="M17 24h14M24 17v14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                          </svg>
+                        </div>
+                      {% endif %}
                       <div class="bike-builder__upgrade-card-info">
-                        <span class="bike-builder__upgrade-card-title">Keep Stock</span>
+                        <span class="bike-builder__upgrade-card-title">{{ metaobj.default_product_title | default: 'Keep Stock' }}</span>
                         <span class="bike-builder__upgrade-card-price">Included</span>
                       </div>
                       <div class="bike-builder__upgrade-card-check" aria-hidden="true">
@@ -203,18 +216,24 @@
                     </div>
                   </label>
 
-                  {% for upgrade_product in cat_collection.products %}
-                    {% render 'bike-builder-upgrade-card',
-                      upgrade_product: upgrade_product,
-                      category_index: step_index
-                    %}
-                  {% endfor %}
+                  {% if upgrade_product %}
+                    {% for upgrade_variant in upgrade_product.variants %}
+                      {% if upgrade_variant.available %}
+                        {% render 'bike-builder-upgrade-card',
+                          upgrade_variant: upgrade_variant,
+                          upgrade_product: upgrade_product,
+                          category_handle: handle,
+                          category_index: step_index
+                        %}
+                      {% endif %}
+                    {% endfor %}
+                  {% endif %}
                 </div>
               </div>
               {%- assign step_index = step_index | plus: 1 -%}
             {% endif %}
           {% endfor %}
-        {% endif %}
+        </div>
 
         {%- comment -%} Review step {%- endcomment -%}
         <div class="bike-builder__step" data-step="{{ step_index }}" data-step-visible="false" ref="steps[]">
@@ -278,7 +297,8 @@
         "currency": {{ cart.currency.iso_code | json }},
         "cartAddUrl": {{ routes.cart_add_url | append: '.js' | json }},
         "totalSteps": {{ total_steps }},
-        "stepNames": {{ step_names | json }}
+        "stepNames": {{ step_names | json }},
+        "upgradeHandles": {{ upgrade_handles | json }}
       }
     </script>
   </bike-builder-component>
