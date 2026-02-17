@@ -1,19 +1,20 @@
 {%- liquid
   assign upgrade_categories = product.metafields.custom.upgrade_categories.value
   assign active_categories = 0
-  assign step_names = 'Select Your Bike' | split: '||'
+  assign step_names_str = 'Select Your Bike'
 
   if upgrade_categories
     for category in upgrade_categories
       assign cat_collection = category.collection.value
       if cat_collection and cat_collection.products.size > 0
         assign active_categories = active_categories | plus: 1
-        assign step_names = step_names | push: category.name
+        assign step_names_str = step_names_str | append: '||' | append: category.name
       endif
     endfor
   endif
 
-  assign step_names = step_names | push: 'Review Build'
+  assign step_names_str = step_names_str | append: '||' | append: 'Review Build'
+  assign step_names = step_names_str | split: '||'
   assign total_steps = active_categories | plus: 2
 
   assign current_variant = product.selected_or_first_available_variant
