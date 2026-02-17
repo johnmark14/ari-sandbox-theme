@@ -1,23 +1,26 @@
 {%- liquid
-  assign upgrade_categories = product.metafields.custom.upgrade_categories.value
+  assign current_variant = product.selected_or_first_available_variant
+
+  comment
+    Known upgrade metafield handles. Add new entries here for new categories.
+  endcomment
+  assign upgrade_handles = 'bike_wheelset' | split: ','
+
   assign active_categories = 0
   assign step_names_str = 'Select Your Bike'
 
-  if upgrade_categories
-    for category in upgrade_categories
-      assign cat_collection = category.collection.value
-      if cat_collection and cat_collection.products.size > 0
-        assign active_categories = active_categories | plus: 1
-        assign step_names_str = step_names_str | append: '||' | append: category.name
-      endif
-    endfor
-  endif
+  for handle in upgrade_handles
+    assign metaobj = current_variant.metafields.custom[handle].value
+    if metaobj != blank
+      assign cat_title = metaobj.title | default: handle
+      assign step_names_str = step_names_str | append: '||' | append: cat_title
+      assign active_categories = active_categories | plus: 1
+    endif
+  endfor
 
   assign step_names_str = step_names_str | append: '||' | append: 'Review Build'
   assign step_names = step_names_str | split: '||'
   assign total_steps = active_categories | plus: 2
-
-  assign current_variant = product.selected_or_first_available_variant
 -%}
 
 <div class="section-background color-{{ section.settings.color_scheme }}"></div>
