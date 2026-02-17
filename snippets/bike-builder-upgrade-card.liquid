@@ -1,31 +1,46 @@
 {%- doc -%}
-  Renders a selectable upgrade product card for the bike builder.
+  Renders a selectable upgrade variant card for the bike builder.
 
-  @param {object} upgrade_product - The upgrade product object
-  @param {number} category_index - The index of the upgrade category (used for radio name grouping)
+  @param {object} upgrade_variant - The variant object to render
+  @param {object} upgrade_product - The parent product object
+  @param {string} category_handle - The upgrade category handle (e.g., "bike_wheelset")
+  @param {number} category_index - The step index for this category
 {%- enddoc -%}
 
 {% liquid
-  assign variant = upgrade_product.selected_or_first_available_variant
-  assign price = variant.price | money
+  assign price = upgrade_variant.price | money
+
+  if upgrade_product.has_only_default_variant
+    assign card_title = upgrade_product.title
+  else
+    assign card_title = upgrade_variant.title
+  endif
+
+  if upgrade_variant.image
+    assign card_image = upgrade_variant.image
+  elsif upgrade_product.featured_image
+    assign card_image = upgrade_product.featured_image
+  else
+    assign card_image = null
+  endif
 %}
 
 <label class="bike-builder__upgrade-card">
   <input
     type="radio"
-    name="upgrade-category-{{ category_index }}"
-    value="{{ variant.id }}"
-    data-upgrade-title="{{ upgrade_product.title | escape }}"
-    data-upgrade-price="{{ variant.price }}"
-    data-upgrade-category-index="{{ category_index }}"
+    name="upgrade-{{ category_handle }}"
+    value="{{ upgrade_variant.id }}"
+    data-upgrade-title="{{ card_title | escape }}"
+    data-upgrade-price="{{ upgrade_variant.price }}"
+    data-upgrade-handle="{{ category_handle }}"
     class="visually-hidden"
     on:change="/handleUpgradeSelect"
   >
   <div class="bike-builder__upgrade-card-inner">
-    {% if upgrade_product.featured_image %}
+    {% if card_image %}
       <div class="bike-builder__upgrade-card-media">
         {{
-          upgrade_product.featured_image
+          card_image
           | image_url: width: 400
           | image_tag:
             loading: 'lazy',
@@ -40,8 +55,8 @@
       </div>
     {% endif %}
     <div class="bike-builder__upgrade-card-info">
-      <span class="bike-builder__upgrade-card-title">{{ upgrade_product.title }}</span>
-      <span class="bike-builder__upgrade-card-price">{{ price }}</span>
+      <span class="bike-builder__upgrade-card-title">{{ card_title }}</span>
+      <span class="bike-builder__upgrade-card-price">+ {{ price }}</span>
     </div>
     <div class="bike-builder__upgrade-card-check" aria-hidden="true">
       <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
