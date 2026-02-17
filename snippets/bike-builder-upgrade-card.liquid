@@ -1,0 +1,53 @@
+{%- doc -%}
+  Renders a selectable upgrade product card for the bike builder.
+
+  @param {object} upgrade_product - The upgrade product object
+  @param {number} category_index - The index of the upgrade category (used for radio name grouping)
+{%- enddoc -%}
+
+{% liquid
+  assign variant = upgrade_product.selected_or_first_available_variant
+  assign price = variant.price | money
+%}
+
+<label class="bike-builder__upgrade-card">
+  <input
+    type="radio"
+    name="upgrade-category-{{ category_index }}"
+    value="{{ variant.id }}"
+    data-upgrade-title="{{ upgrade_product.title | escape }}"
+    data-upgrade-price="{{ variant.price }}"
+    data-upgrade-category-index="{{ category_index }}"
+    class="visually-hidden"
+    on:change="/handleUpgradeSelect"
+  >
+  <div class="bike-builder__upgrade-card-inner">
+    {% if upgrade_product.featured_image %}
+      <div class="bike-builder__upgrade-card-media">
+        {{
+          upgrade_product.featured_image
+          | image_url: width: 400
+          | image_tag:
+            loading: 'lazy',
+            widths: '200, 400',
+            sizes: '(min-width: 750px) 200px, 50vw',
+            class: 'bike-builder__upgrade-card-image'
+        }}
+      </div>
+    {% else %}
+      <div class="bike-builder__upgrade-card-media bike-builder__upgrade-card-media--placeholder">
+        {{ 'product-1' | placeholder_svg_tag: 'placeholder-svg' }}
+      </div>
+    {% endif %}
+    <div class="bike-builder__upgrade-card-info">
+      <span class="bike-builder__upgrade-card-title">{{ upgrade_product.title }}</span>
+      <span class="bike-builder__upgrade-card-price">{{ price }}</span>
+    </div>
+    <div class="bike-builder__upgrade-card-check" aria-hidden="true">
+      <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="2"/>
+        <path class="bike-builder__upgrade-card-check-mark" d="M6 10l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+  </div>
+</label>
