@@ -218,7 +218,29 @@
 
                   {% if upgrade_product %}
                     {% for upgrade_variant in upgrade_product.variants %}
-                      {% if upgrade_variant.available %}
+                      {% assign show_variant = true %}
+
+                      {% for up_opt_name in upgrade_product.options %}
+                        {% for base_opt_name in product.options %}
+                          {% if up_opt_name == base_opt_name %}
+                            {% case forloop.parentloop.index %}
+                              {% when 1 %}{% assign up_val = upgrade_variant.option1 %}
+                              {% when 2 %}{% assign up_val = upgrade_variant.option2 %}
+                              {% when 3 %}{% assign up_val = upgrade_variant.option3 %}
+                            {% endcase %}
+                            {% case forloop.index %}
+                              {% when 1 %}{% assign base_val = current_variant.option1 %}
+                              {% when 2 %}{% assign base_val = current_variant.option2 %}
+                              {% when 3 %}{% assign base_val = current_variant.option3 %}
+                            {% endcase %}
+                            {% unless up_val == base_val %}
+                              {% assign show_variant = false %}
+                            {% endunless %}
+                          {% endif %}
+                        {% endfor %}
+                      {% endfor %}
+
+                      {% if show_variant and upgrade_variant.available %}
                         {% render 'bike-builder-upgrade-card',
                           upgrade_variant: upgrade_variant,
                           upgrade_product: upgrade_product,
