@@ -217,40 +217,28 @@
                   </label>
 
                   {% if upgrade_product %}
-                    {%- comment -%} Phase 1: Extract base variant option names/values into flat variables {%- endcomment -%}
-                    {% for opt_name in product.options %}
-                      {% case forloop.index %}
-                        {% when 1 %}
-                          {% assign base_opt1_name = opt_name %}
-                          {% assign base_opt1_val = current_variant.option1 %}
-                        {% when 2 %}
-                          {% assign base_opt2_name = opt_name %}
-                          {% assign base_opt2_val = current_variant.option2 %}
-                        {% when 3 %}
-                          {% assign base_opt3_name = opt_name %}
-                          {% assign base_opt3_val = current_variant.option3 %}
-                      {% endcase %}
-                    {% endfor %}
-
-                    {%- comment -%} Phase 2: Filter upgrade variants by matching shared option values {%- endcomment -%}
+                    <!-- BIKE-BUILDER-DEBUG: base option1={{ current_variant.option1 }} option2={{ current_variant.option2 }} option3={{ current_variant.option3 }} -->
+                    {%- comment -%} Filter upgrade variants by matching option values at the same position {%- endcomment -%}
                     {% for upgrade_variant in upgrade_product.variants %}
                       {% assign show_variant = true %}
 
-                      {% for up_opt_name in upgrade_product.options %}
-                        {% case forloop.index %}
-                          {% when 1 %}{% assign up_val = upgrade_variant.option1 %}
-                          {% when 2 %}{% assign up_val = upgrade_variant.option2 %}
-                          {% when 3 %}{% assign up_val = upgrade_variant.option3 %}
-                        {% endcase %}
+                      {% if upgrade_product.options.size >= 1 %}
+                        {% unless upgrade_variant.option1 == current_variant.option1 %}
+                          {% assign show_variant = false %}
+                        {% endunless %}
+                      {% endif %}
 
-                        {% if up_opt_name == base_opt1_name %}
-                          {% unless up_val == base_opt1_val %}{% assign show_variant = false %}{% endunless %}
-                        {% elsif up_opt_name == base_opt2_name %}
-                          {% unless up_val == base_opt2_val %}{% assign show_variant = false %}{% endunless %}
-                        {% elsif up_opt_name == base_opt3_name %}
-                          {% unless up_val == base_opt3_val %}{% assign show_variant = false %}{% endunless %}
-                        {% endif %}
-                      {% endfor %}
+                      {% if upgrade_product.options.size >= 2 %}
+                        {% unless upgrade_variant.option2 == current_variant.option2 %}
+                          {% assign show_variant = false %}
+                        {% endunless %}
+                      {% endif %}
+
+                      {% if upgrade_product.options.size >= 3 %}
+                        {% unless upgrade_variant.option3 == current_variant.option3 %}
+                          {% assign show_variant = false %}
+                        {% endunless %}
+                      {% endif %}
 
                       {% if show_variant and upgrade_variant.available %}
                         {% render 'bike-builder-upgrade-card',
