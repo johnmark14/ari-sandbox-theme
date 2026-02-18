@@ -217,27 +217,39 @@
                   </label>
 
                   {% if upgrade_product %}
+                    {%- comment -%} Phase 1: Extract base variant option names/values into flat variables {%- endcomment -%}
+                    {% for opt_name in product.options %}
+                      {% case forloop.index %}
+                        {% when 1 %}
+                          {% assign base_opt1_name = opt_name %}
+                          {% assign base_opt1_val = current_variant.option1 %}
+                        {% when 2 %}
+                          {% assign base_opt2_name = opt_name %}
+                          {% assign base_opt2_val = current_variant.option2 %}
+                        {% when 3 %}
+                          {% assign base_opt3_name = opt_name %}
+                          {% assign base_opt3_val = current_variant.option3 %}
+                      {% endcase %}
+                    {% endfor %}
+
+                    {%- comment -%} Phase 2: Filter upgrade variants by matching shared option values {%- endcomment -%}
                     {% for upgrade_variant in upgrade_product.variants %}
                       {% assign show_variant = true %}
 
                       {% for up_opt_name in upgrade_product.options %}
-                        {% for base_opt_name in product.options %}
-                          {% if up_opt_name == base_opt_name %}
-                            {% case forloop.parentloop.index %}
-                              {% when 1 %}{% assign up_val = upgrade_variant.option1 %}
-                              {% when 2 %}{% assign up_val = upgrade_variant.option2 %}
-                              {% when 3 %}{% assign up_val = upgrade_variant.option3 %}
-                            {% endcase %}
-                            {% case forloop.index %}
-                              {% when 1 %}{% assign base_val = current_variant.option1 %}
-                              {% when 2 %}{% assign base_val = current_variant.option2 %}
-                              {% when 3 %}{% assign base_val = current_variant.option3 %}
-                            {% endcase %}
-                            {% unless up_val == base_val %}
-                              {% assign show_variant = false %}
-                            {% endunless %}
-                          {% endif %}
-                        {% endfor %}
+                        {% case forloop.index %}
+                          {% when 1 %}{% assign up_val = upgrade_variant.option1 %}
+                          {% when 2 %}{% assign up_val = upgrade_variant.option2 %}
+                          {% when 3 %}{% assign up_val = upgrade_variant.option3 %}
+                        {% endcase %}
+
+                        {% if up_opt_name == base_opt1_name %}
+                          {% unless up_val == base_opt1_val %}{% assign show_variant = false %}{% endunless %}
+                        {% elsif up_opt_name == base_opt2_name %}
+                          {% unless up_val == base_opt2_val %}{% assign show_variant = false %}{% endunless %}
+                        {% elsif up_opt_name == base_opt3_name %}
+                          {% unless up_val == base_opt3_val %}{% assign show_variant = false %}{% endunless %}
+                        {% endif %}
                       {% endfor %}
 
                       {% if show_variant and upgrade_variant.available %}
