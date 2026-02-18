@@ -217,8 +217,15 @@
                   </label>
 
                   {% if upgrade_product %}
-                    <!-- BIKE-BUILDER-DEBUG: base option1={{ current_variant.option1 }} option2={{ current_variant.option2 }} option3={{ current_variant.option3 }} -->
-                    {%- comment -%} Filter upgrade variants by matching option values at the same position {%- endcomment -%}
+                    <!--
+                      BIKE-BUILDER-DEBUG
+                      base_product_options: {{ product.options | join: ' / ' }}
+                      base_variant: option1=[{{ current_variant.option1 }}] option2=[{{ current_variant.option2 }}] option3=[{{ current_variant.option3 }}]
+                      upgrade_product_title: {{ upgrade_product.title }}
+                      upgrade_product_options: {{ upgrade_product.options | join: ' / ' }}
+                      upgrade_product_options_size: {{ upgrade_product.options.size }}
+                      upgrade_variant_count: {{ upgrade_product.variants.size }}
+                    -->
                     {% for upgrade_variant in upgrade_product.variants %}
                       {% assign show_variant = true %}
 
@@ -239,6 +246,8 @@
                           {% assign show_variant = false %}
                         {% endunless %}
                       {% endif %}
+
+                      <!-- DEBUG-VARIANT: title=[{{ upgrade_variant.title }}] o1=[{{ upgrade_variant.option1 }}] o2=[{{ upgrade_variant.option2 }}] o3=[{{ upgrade_variant.option3 }}] show=[{{ show_variant }}] available=[{{ upgrade_variant.available }}] -->
 
                       {% if show_variant and upgrade_variant.available %}
                         {% render 'bike-builder-upgrade-card',
