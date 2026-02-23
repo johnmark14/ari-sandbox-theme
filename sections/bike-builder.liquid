@@ -1,0 +1,785 @@
+{%- liquid
+  assign current_variant = product.selected_or_first_available_variant
+
+  comment
+    Known upgrade metafield handles. Add new entries here for new categories.
+  endcomment
+  assign upgrade_handles = 'bike_wheelset' | split: ','
+
+  assign active_categories = 0
+  assign step_names_str = 'Select Your Bike'
+
+  for handle in upgrade_handles
+    assign metaobj = current_variant.metafields.custom[handle].value
+    if metaobj != blank
+      assign cat_title = metaobj.title | default: handle
+      assign step_names_str = step_names_str | append: '||' | append: cat_title
+      assign active_categories = active_categories | plus: 1
+    endif
+  endfor
+
+  assign step_names_str = step_names_str | append: '||' | append: 'Review Build'
+  assign step_names = step_names_str | split: '||'
+  assign total_steps = active_categories | plus: 2
+-%}
+
+<div class="section-background color-{{ section.settings.color_scheme }}"></div>
+<div
+  class="bike-builder section section--page-width spacing-style color-{{ section.settings.color_scheme }}"
+  style="{% render 'spacing-style', settings: section.settings %}"
+>
+  <bike-builder-component
+    data-total-steps="{{ total_steps }}"
+    data-section-id="{{ section.id }}"
+    data-product-url="{{ product.url }}"
+  >
+    <div class="bike-builder__layout">
+      {%- comment -%} Left column: Product media {%- endcomment -%}
+      <div class="bike-builder__media">
+        {% if product.featured_image %}
+          {{
+            product.featured_image
+            | image_url: width: 1200
+            | image_tag:
+              loading: 'eager',
+              widths: '400, 600, 800, 1000, 1200',
+              sizes: '(min-width: 750px) 55vw, 100vw',
+              class: 'bike-builder__media-image'
+          }}
+        {% else %}
+          <div class="bike-builder__media-placeholder">
+            {{ 'product-1' | placeholder_svg_tag: 'placeholder-svg' }}
+          </div>
+        {% endif %}
+      </div>
+
+      {%- comment -%} Right column: Builder steps {%- endcomment -%}
+      <div class="bike-builder__sidebar">
+        {%- comment -%} Progress bar {%- endcomment -%}
+        <div class="bike-builder__progress" ref="progress">
+          {% for name in step_names %}
+            <div
+              class="bike-builder__progress-step"
+              data-step-index="{{ forloop.index0 }}"
+              {% if forloop.first %}data-active="true"{% endif %}
+            >
+              <div class="bike-builder__progress-dot">
+                <span class="bike-builder__progress-number">{{ forloop.index }}</span>
+              </div>
+              <span class="bike-builder__progress-label">{{ name }}</span>
+            </div>
+            {% unless forloop.last %}
+              <div class="bike-builder__progress-line" data-step-index="{{ forloop.index0 }}"></div>
+            {% endunless %}
+          {% endfor %}
+        </div>
+
+        {%- comment -%} Step 1: Variant selection {%- endcomment -%}
+        <div class="bike-builder__step" data-step="0" data-step-visible="true" ref="steps[]">
+          <h1 class="bike-builder__title">{{ product.title }}</h1>
+          <div class="bike-builder__price" ref="basePrice">
+            {{ current_variant.price | money }}
+          </div>
+
+          {% unless product.has_only_default_variant %}
+            <variant-picker
+              class="variant-picker variant-picker--left"
+              data-section-id="{{ section.id }}"
+              data-product-id="{{ product.id }}"
+              data-product-url="{{ product.url }}"
+              data-template-product-match="false"
+              ref="mainVariantPicker"
+            >
+              <form class="variant-picker__form">
+                {%- for product_option in product.options_with_values -%}
+                  {%- assign fieldset_index = forloop.index0 -%}
+                  <fieldset
+                    class="variant-option variant-option--buttons"
+                    data-fieldset-index="{{ fieldset_index }}"
+                    ref="fieldsets[]"
+                  >
+                    <legend>{{ product_option.name | escape }}</legend>
+                    {%- for product_option_value in product_option.values -%}
+                      <label class="variant-option__button-label">
+                        <input
+                          type="radio"
+                          name="{{ product_option.name | escape }}-{{ section.id }}-{{ product.id }}"
+                          value="{{ product_option_value | escape }}"
+                          aria-label="{{ product_option_value.name }}"
+                          {% if product_option_value.available == false %}
+                            aria-disabled="true"
+                          {% endif %}
+                          data-previous-checked="false"
+                          data-fieldset-index="{{ fieldset_index }}"
+                          data-input-index="{{ forloop.index0 }}"
+                          data-input-id="{{ product_option.position }}-{{ forloop.index0 }}"
+                          data-option-value-id="{{ product_option_value.id }}"
+                          data-option-available="{{ product_option_value.available }}"
+                          {% if product_option_value.variant.id %}
+                            data-variant-id="{{ product_option_value.variant.id }}"
+                          {% endif %}
+                          {% if product_option_value.selected %}
+                            data-current-checked="true"
+                            checked
+                          {% else %}
+                            data-current-checked="false"
+                          {% endif %}
+                        >
+                        {% if product_option_value.available == true %}
+                          <span
+                            class="variant-option__button-label__pill"
+                            data-key="variant-option-pill"
+                          ></span>
+                        {% endif %}
+                        <span
+                          class="variant-option__button-label__text"
+                          data-key="variant-option-text"
+                        >
+                          {{- product_option_value | escape -}}
+                        </span>
+                        {% render 'strikethrough-variant', product_option: product_option_value %}
+                      </label>
+                    {%- endfor -%}
+                  </fieldset>
+                {%- endfor -%}
+
+                <script type="application/json">
+                  {{ product.selected_or_first_available_variant | json }}
+                </script>
+              </form>
+            </variant-picker>
+          {% endunless %}
+
+          {% if product.description != blank %}
+            <div class="bike-builder__description rte">
+              {{ product.description }}
+            </div>
+          {% endif %}
+        </div>
+
+        {%- comment -%} Steps 2-N: Upgrade categories {%- endcomment -%}
+        <div ref="upgradeStepsContainer">
+          {%- assign step_index = 1 -%}
+          {% for handle in upgrade_handles %}
+            {% assign metaobj = current_variant.metafields.custom[handle].value %}
+            {% if metaobj != blank %}
+              {% assign upgrade_product = metaobj.products.value %}
+              {% assign cat_title = metaobj.title | default: handle %}
+              <div class="bike-builder__step" data-step="{{ step_index }}" data-step-visible="false" ref="steps[]">
+                <h2 class="bike-builder__step-title">{{ cat_title }}</h2>
+
+                <div class="bike-builder__upgrade-grid">
+                  {%- comment -%} Keep Stock option {%- endcomment -%}
+                  <label class="bike-builder__upgrade-card bike-builder__upgrade-card--stock">
+                    <input
+                      type="radio"
+                      name="upgrade-{{ handle }}"
+                      value=""
+                      data-upgrade-title="Keep Stock"
+                      data-upgrade-price="0"
+                      data-upgrade-handle="{{ handle }}"
+                      class="visually-hidden"
+                      checked
+                      on:change="/handleUpgradeSelect"
+                    >
+                    <div class="bike-builder__upgrade-card-inner">
+                      {% if metaobj.default_product_image %}
+                        <div class="bike-builder__upgrade-card-media">
+                          {{
+                            metaobj.default_product_image
+                            | image_url: width: 400
+                            | image_tag:
+                              loading: 'lazy',
+                              widths: '200, 400',
+                              sizes: '(min-width: 750px) 200px, 50vw',
+                              class: 'bike-builder__upgrade-card-image'
+                          }}
+                        </div>
+                      {% else %}
+                        <div class="bike-builder__upgrade-card-media bike-builder__upgrade-card-media--stock">
+                          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3"/>
+                            <path d="M17 24h14M24 17v14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                          </svg>
+                        </div>
+                      {% endif %}
+                      <div class="bike-builder__upgrade-card-info">
+                        <span class="bike-builder__upgrade-card-title">{{ metaobj.default_product_title | default: 'Keep Stock' }}</span>
+                        <span class="bike-builder__upgrade-card-price">Included</span>
+                      </div>
+                      <div class="bike-builder__upgrade-card-check" aria-hidden="true">
+                        <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="2"/>
+                          <path class="bike-builder__upgrade-card-check-mark" d="M6 10l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                      </div>
+                    </div>
+                  </label>
+
+                  {% if upgrade_product %}
+                    <!--
+                      BIKE-BUILDER-DEBUG
+                      base_product_options: {{ product.options | join: ' / ' }}
+                      base_variant: option1=[{{ current_variant.option1 }}] option2=[{{ current_variant.option2 }}] option3=[{{ current_variant.option3 }}]
+                      upgrade_product_title: {{ upgrade_product.title }}
+                      upgrade_product_options: {{ upgrade_product.options | join: ' / ' }}
+                      upgrade_product_options_size: {{ upgrade_product.options.size }}
+                      upgrade_variant_count: {{ upgrade_product.variants.size }}
+                    -->
+                    {% for upgrade_variant in upgrade_product.variants %}
+                      {% assign show_variant = true %}
+
+                      {% if upgrade_product.options.size >= 1 %}
+                        {% unless upgrade_variant.option1 == current_variant.option1 %}
+                          {% assign show_variant = false %}
+                        {% endunless %}
+                      {% endif %}
+
+                      {% if upgrade_product.options.size >= 2 %}
+                        {% unless upgrade_variant.option2 == current_variant.option2 %}
+                          {% assign show_variant = false %}
+                        {% endunless %}
+                      {% endif %}
+
+                      {% if upgrade_product.options.size >= 3 %}
+                        {% unless upgrade_variant.option3 == current_variant.option3 %}
+                          {% assign show_variant = false %}
+                        {% endunless %}
+                      {% endif %}
+
+                      <!-- DEBUG-VARIANT: title=[{{ upgrade_variant.title }}] o1=[{{ upgrade_variant.option1 }}] o2=[{{ upgrade_variant.option2 }}] o3=[{{ upgrade_variant.option3 }}] show=[{{ show_variant }}] available=[{{ upgrade_variant.available }}] -->
+
+                      {% if show_variant and upgrade_variant.available %}
+                        {% render 'bike-builder-upgrade-card',
+                          upgrade_variant: upgrade_variant,
+                          upgrade_product: upgrade_product,
+                          category_handle: handle,
+                          category_index: step_index
+                        %}
+                      {% endif %}
+                    {% endfor %}
+                  {% endif %}
+                </div>
+              </div>
+              {%- assign step_index = step_index | plus: 1 -%}
+            {% endif %}
+          {% endfor %}
+        </div>
+
+        {%- comment -%} Review step {%- endcomment -%}
+        <div class="bike-builder__step" data-step="{{ step_index }}" data-step-visible="false" ref="steps[]">
+          <h2 class="bike-builder__step-title">Review Your Build</h2>
+
+          <div class="bike-builder__review" ref="reviewContainer">
+            <div class="bike-builder__review-item">
+              <span class="bike-builder__review-label">Base Bike</span>
+              <span class="bike-builder__review-value" ref="reviewBaseName">{{ product.title }}</span>
+              <span class="bike-builder__review-price" ref="reviewBasePrice">{{ current_variant.price | money }}</span>
+            </div>
+            <div ref="reviewUpgrades"></div>
+            <div class="bike-builder__review-total">
+              <span class="bike-builder__review-label">Total</span>
+              <span class="bike-builder__review-price" ref="reviewTotal">{{ current_variant.price | money }}</span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            class="bike-builder__add-to-cart button"
+            ref="addToCartButton"
+            on:click="/handleAddBuild"
+          >
+            Add Build to Cart
+          </button>
+          <div class="bike-builder__cart-error" ref="cartError" hidden></div>
+        </div>
+
+        {%- comment -%} Navigation {%- endcomment -%}
+        <div class="bike-builder__nav">
+          <button
+            type="button"
+            class="bike-builder__nav-btn bike-builder__nav-btn--back button button--tertiary"
+            ref="backButton"
+            on:click="/handleBack"
+            hidden
+          >
+            Back
+          </button>
+          <button
+            type="button"
+            class="bike-builder__nav-btn bike-builder__nav-btn--next button"
+            ref="nextButton"
+            on:click="/handleNext"
+          >
+            Next: Choose Upgrades
+          </button>
+        </div>
+      </div>
+    </div>
+
+    {%- comment -%} Product data for JS {%- endcomment -%}
+    <script type="application/json" ref="productData">
+      {
+        "productId": {{ product.id | json }},
+        "productTitle": {{ product.title | json }},
+        "currentVariantId": {{ current_variant.id | json }},
+        "currentVariantPrice": {{ current_variant.price }},
+        "moneyFormat": {{ shop.money_format | json }},
+        "currency": {{ cart.currency.iso_code | json }},
+        "cartAddUrl": {{ routes.cart_add_url | append: '.js' | json }},
+        "totalSteps": {{ total_steps }},
+        "stepNames": {{ step_names | json }},
+        "upgradeHandles": {{ upgrade_handles | json }}
+      }
+    </script>
+  </bike-builder-component>
+</div>
+
+<script src="{{ 'bike-builder.js' | asset_url }}" type="module"></script>
+
+{% schema %}
+{
+  "name": "Bike Builder",
+  "tag": "section",
+  "class": "bike-builder-section",
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Top padding",
+      "default": 28
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Bottom padding",
+      "default": 28
+    }
+  ],
+  "presets": [
+    {
+      "name": "Bike Builder"
+    }
+  ]
+}
+{% endschema %}
+
+{% stylesheet %}
+  .bike-builder {
+    --bike-builder-gap: var(--padding-lg, 24px);
+  }
+
+  .bike-builder__layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--bike-builder-gap);
+  }
+
+  @media screen and (min-width: 750px) {
+    .bike-builder__layout {
+      grid-template-columns: 1fr min(50vw, var(--sidebar-width, 450px));
+      align-items: start;
+    }
+  }
+
+  @media screen and (min-width: 1200px) {
+    .bike-builder__layout {
+      grid-template-columns: 2fr 1fr;
+    }
+  }
+
+  /* Media column */
+  .bike-builder__media {
+    position: relative;
+  }
+
+  @media screen and (min-width: 750px) {
+    .bike-builder__media {
+      position: sticky;
+      top: calc(var(--header-height, 0px) + var(--bike-builder-gap));
+    }
+  }
+
+  .bike-builder__media-image {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: var(--style-border-radius, 0);
+  }
+
+  .bike-builder__media-placeholder {
+    aspect-ratio: 1 / 1;
+    background: var(--color-background-secondary, #f5f5f5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .bike-builder__media-placeholder .placeholder-svg {
+    width: 50%;
+    opacity: 0.5;
+  }
+
+  /* Sidebar */
+  .bike-builder__sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--bike-builder-gap);
+  }
+
+  /* Progress bar */
+  .bike-builder__progress {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding-block-end: var(--padding-md, 16px);
+    border-bottom: 1px solid var(--color-border, #e5e5e5);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .bike-builder__progress::-webkit-scrollbar {
+    display: none;
+  }
+
+  .bike-builder__progress-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    min-width: 60px;
+  }
+
+  .bike-builder__progress-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid var(--color-border, #ccc);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+    background: var(--color-background, #fff);
+  }
+
+  .bike-builder__progress-number {
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .bike-builder__progress-step[data-active="true"] .bike-builder__progress-dot {
+    background: var(--color-foreground, #000);
+    border-color: var(--color-foreground, #000);
+    color: var(--color-background, #fff);
+  }
+
+  .bike-builder__progress-step[data-completed="true"] .bike-builder__progress-dot {
+    background: var(--color-foreground, #000);
+    border-color: var(--color-foreground, #000);
+    color: var(--color-background, #fff);
+  }
+
+  .bike-builder__progress-label {
+    font-size: 0.625rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-align: center;
+    white-space: nowrap;
+    color: var(--color-foreground-secondary, #666);
+  }
+
+  .bike-builder__progress-step[data-active="true"] .bike-builder__progress-label {
+    color: var(--color-foreground, #000);
+    font-weight: 600;
+  }
+
+  .bike-builder__progress-line {
+    flex: 1;
+    height: 2px;
+    background: var(--color-border, #e5e5e5);
+    min-width: 12px;
+    align-self: center;
+    margin-block-end: 18px;
+    transition: background-color 0.2s;
+  }
+
+  .bike-builder__progress-line[data-completed="true"] {
+    background: var(--color-foreground, #000);
+  }
+
+  /* Steps */
+  .bike-builder__step {
+    display: none;
+    flex-direction: column;
+    gap: var(--padding-md, 16px);
+  }
+
+  .bike-builder__step[data-step-visible="true"] {
+    display: flex;
+  }
+
+  .bike-builder__title {
+    margin: 0;
+  }
+
+  .bike-builder__price {
+    font-size: 1.125rem;
+  }
+
+  .bike-builder__step-title {
+    margin: 0;
+    font-size: 1.25rem;
+  }
+
+  .bike-builder__step-description {
+    margin: 0;
+    color: var(--color-foreground-secondary, #666);
+  }
+
+  .bike-builder__description {
+    margin-block-start: var(--padding-sm, 8px);
+    color: var(--color-foreground-secondary, #666);
+  }
+
+  /* Upgrade grid */
+  .bike-builder__upgrade-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--padding-sm, 8px);
+  }
+
+  @media screen and (max-width: 749px) {
+    .bike-builder__upgrade-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Upgrade cards */
+  .bike-builder__upgrade-card {
+    cursor: pointer;
+    display: block;
+  }
+
+  .bike-builder__upgrade-card input[type="radio"] {
+    position: absolute !important;
+    overflow: hidden;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    clip: rect(0 0 0 0);
+    word-wrap: normal !important;
+  }
+
+  .bike-builder__upgrade-card-inner {
+    border: 2px solid var(--color-border, #e5e5e5);
+    border-radius: var(--style-border-radius, 8px);
+    overflow: hidden;
+    transition: border-color 0.2s;
+    position: relative;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .bike-builder__upgrade-card:hover .bike-builder__upgrade-card-inner {
+    border-color: var(--color-foreground-secondary, #999);
+  }
+
+  .bike-builder__upgrade-card:has(input:checked) .bike-builder__upgrade-card-inner {
+    border-color: var(--color-foreground, #000);
+  }
+
+  .bike-builder__upgrade-card-media {
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    background: var(--color-background-secondary, #f5f5f5);
+  }
+
+  .bike-builder__upgrade-card-media--stock {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-foreground-secondary, #999);
+  }
+
+  .bike-builder__upgrade-card-media--stock svg {
+    width: 48px;
+    height: 48px;
+  }
+
+  .bike-builder__upgrade-card-media--placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .bike-builder__upgrade-card-media--placeholder .placeholder-svg {
+    width: 60%;
+    opacity: 0.5;
+  }
+
+  .bike-builder__upgrade-card-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .bike-builder__upgrade-card-info {
+    padding: var(--padding-sm, 8px);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+  }
+
+  .bike-builder__upgrade-card-title {
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.3;
+  }
+
+  .bike-builder__upgrade-card-price {
+    font-size: 0.8125rem;
+    color: var(--color-foreground-secondary, #666);
+  }
+
+  .bike-builder__upgrade-card-check {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 20px;
+    height: 20px;
+    color: var(--color-border, #ccc);
+    transition: color 0.2s;
+  }
+
+  .bike-builder__upgrade-card-check-mark {
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .bike-builder__upgrade-card:has(input:checked) .bike-builder__upgrade-card-check {
+    color: var(--color-foreground, #000);
+  }
+
+  .bike-builder__upgrade-card:has(input:checked) .bike-builder__upgrade-card-check-mark {
+    opacity: 1;
+  }
+
+  /* Review */
+  .bike-builder__review {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border: 1px solid var(--color-border, #e5e5e5);
+    border-radius: var(--style-border-radius, 8px);
+    overflow: hidden;
+  }
+
+  .bike-builder__review-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: var(--padding-sm, 8px);
+    padding: var(--padding-md, 12px) var(--padding-lg, 16px);
+    border-bottom: 1px solid var(--color-border, #e5e5e5);
+    align-items: center;
+  }
+
+  .bike-builder__review-item:last-child {
+    border-bottom: none;
+  }
+
+  .bike-builder__review-label {
+    font-size: 0.8125rem;
+    color: var(--color-foreground-secondary, #666);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+
+  .bike-builder__review-value {
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-align: center;
+  }
+
+  .bike-builder__review-price {
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .bike-builder__review-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--padding-md, 12px) var(--padding-lg, 16px);
+    background: var(--color-background-secondary, #f5f5f5);
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  /* Add to cart */
+  .bike-builder__add-to-cart {
+    width: 100%;
+  }
+
+  .bike-builder__cart-error {
+    color: var(--color-error, #cc0000);
+    font-size: 0.875rem;
+    text-align: center;
+  }
+
+  /* Navigation */
+  .bike-builder__nav {
+    display: flex;
+    gap: var(--padding-sm, 8px);
+    padding-block-start: var(--padding-md, 16px);
+    border-top: 1px solid var(--color-border, #e5e5e5);
+  }
+
+  .bike-builder__nav-btn {
+    flex: 1;
+  }
+
+  .bike-builder__nav-btn--back {
+    flex: 0 0 auto;
+  }
+
+  .bike-builder__nav-btn--next {
+    flex: 1;
+  }
+
+  @media screen and (max-width: 749px) {
+    .bike-builder__nav {
+      position: sticky;
+      bottom: 0;
+      background: var(--color-background, #fff);
+      padding: var(--padding-md, 16px);
+      margin-inline: calc(-1 * var(--padding-lg, 16px));
+      border-top: 1px solid var(--color-border, #e5e5e5);
+      z-index: 10;
+    }
+  }
+{% endstylesheet %}

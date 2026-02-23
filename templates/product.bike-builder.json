@@ -1,0 +1,9 @@
+{
+  "sections": {
+    "main": {
+      "type": "bike-builder",
+      "settings": {}
+    }
+  },
+  "order": ["main"]
+}
