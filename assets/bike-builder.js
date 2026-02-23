@@ -124,29 +124,27 @@ class BikeBuilderComponent extends Component {
     }
 
     const buildId = `build-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const items = [];
 
-    const items = [
-      {
+    if (this.#selectedUpgrades.size === 0) {
+      // No upgrades selected — add base bike only
+      items.push({
         id: this.#selectedVariantId,
         quantity: 1,
-        properties: {
-          _build_id: buildId,
-          _build_role: 'base',
-        },
-      },
-    ];
-
-    for (const [handle, upgrade] of this.#selectedUpgrades) {
-      items.push({
-        id: parseInt(upgrade.variantId, 10),
-        quantity: 1,
-        properties: {
-          _build_id: buildId,
-          _build_role: 'upgrade',
-          _build_category: handle,
-          _build_upgrade_name: upgrade.title,
-        },
       });
+    } else {
+      // Only add bundle/upgrade variants (they already include the base bike)
+      for (const [handle, upgrade] of this.#selectedUpgrades) {
+        items.push({
+          id: parseInt(upgrade.variantId, 10),
+          quantity: 1,
+          properties: {
+            _build_id: buildId,
+            _build_category: handle,
+            _build_upgrade_name: upgrade.title,
+          },
+        });
+      }
     }
 
     try {
