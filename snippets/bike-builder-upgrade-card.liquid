@@ -5,10 +5,12 @@
   @param {object} upgrade_product - The parent product object
   @param {string} category_handle - The upgrade category handle (e.g., "bike_wheelset")
   @param {number} category_index - The step index for this category
+  @param {number} base_price - The base bike variant price (subtracted to show upgrade cost)
 {%- enddoc -%}
 
 {% liquid
-  assign price = upgrade_variant.price | money
+  assign upgrade_cost = upgrade_variant.price | minus: base_price
+  assign price = upgrade_cost | money
 
   if upgrade_product.has_only_default_variant
     assign card_title = upgrade_product.title
