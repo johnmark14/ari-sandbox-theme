@@ -320,7 +320,7 @@ class BikeBuilderComponent extends Component {
       let upgradeTotal = 0;
 
       for (const [handle, upgrade] of this.#selectedUpgrades) {
-        upgradeTotal += upgrade.price;
+        upgradeTotal += upgrade.price - this.#selectedVariantPrice;
 
         const item = document.createElement('div');
         item.className = 'bike-builder__review-item';
@@ -335,7 +335,7 @@ class BikeBuilderComponent extends Component {
 
         const price = document.createElement('span');
         price.className = 'bike-builder__review-price';
-        price.textContent = `+ ${this.#formatPrice(upgrade.price)}`;
+        price.textContent = `+ ${this.#formatPrice(upgrade.price - this.#selectedVariantPrice)}`;
 
         item.append(label, value, price);
         reviewUpgrades.appendChild(item);
