@@ -125,7 +125,9 @@ class BikeBuilderV2Component extends Component {
       const upgrade = this.#selectedUpgrades.get(handle);
       if (upgrade) {
         // Visible to customer in cart/checkout
-        properties[label] = upgrade.title;
+        properties[label] = upgrade.addon > 0
+          ? `${upgrade.title} (+${this.#formatPrice(upgrade.addon)})`
+          : upgrade.title;
         // Hidden — for Cart Transform Function
         properties[`_${handle}`] = upgrade.title;
         properties[`_${handle}_addon`] = String(upgrade.addon);
@@ -135,6 +137,16 @@ class BikeBuilderV2Component extends Component {
         properties[`_${handle}`] = 'Stock';
         properties[`_${handle}_addon`] = '0';
       }
+    }
+
+    // Calculate addon total for visible Build Total property
+    let addonTotal = 0;
+    for (const handle of handles) {
+      const upgrade = this.#selectedUpgrades.get(handle);
+      if (upgrade) addonTotal += upgrade.addon;
+    }
+    if (addonTotal > 0) {
+      properties['Build Total'] = this.#formatPrice(this.#selectedVariantPrice + addonTotal);
     }
 
     const items = [{
