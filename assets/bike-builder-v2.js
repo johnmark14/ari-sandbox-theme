@@ -121,12 +121,17 @@ class BikeBuilderV2Component extends Component {
     // Encode each upgrade category into properties
     const handles = this.#productData.upgradeHandles || [];
     for (const handle of handles) {
+      const label = handle.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
       const upgrade = this.#selectedUpgrades.get(handle);
       if (upgrade) {
+        // Visible to customer in cart/checkout
+        properties[label] = upgrade.title;
+        // Hidden — for Cart Transform Function
         properties[`_${handle}`] = upgrade.title;
         properties[`_${handle}_addon`] = String(upgrade.addon);
       } else {
         // Stock selected — record zero addon
+        properties[label] = 'Stock';
         properties[`_${handle}`] = 'Stock';
         properties[`_${handle}_addon`] = '0';
       }
