@@ -63,7 +63,9 @@
             <div
               class="bike-builder-v2__progress-step"
               data-step-index="{{ forloop.index0 }}"
-              {% if forloop.first %}data-active="true"{% endif %}
+              {% if forloop.first %}
+                data-active="true"
+              {% endif %}
             >
               <div class="bike-builder-v2__progress-dot">
                 <span class="bike-builder-v2__progress-number">{{ forloop.index }}</span>
@@ -164,7 +166,7 @@
           {%- assign step_index = 1 -%}
           {% if categories != blank %}
             {% for category in categories %}
-              {% assign cat_handle = category.handle.value | default: category.handle %}
+              {% assign cat_handle = category.product_handle.value | default: category.product_handle %}
               {% assign cat_title = category.title.value | default: category.title %}
               {% assign stock_title = category.stock_title.value | default: 'Keep Stock' %}
               {% assign stock_image = category.stock_image.value %}
@@ -225,10 +227,7 @@
                     {%- comment -%} Upgrade option cards from metaobject list {%- endcomment -%}
                     {% if options != blank %}
                       {% for option in options %}
-                        {% render 'bike-builder-v2-upgrade-card',
-                          option: option,
-                          category_handle: cat_handle
-                        %}
+                        {% render 'bike-builder-v2-upgrade-card', option: option, category_handle: cat_handle %}
                       {% endfor %}
                     {% endif %}
                   </div>
@@ -247,7 +246,9 @@
             <div class="bike-builder-v2__review-item">
               <span class="bike-builder-v2__review-label">Base Bike</span>
               <span class="bike-builder-v2__review-value" ref="reviewBaseName">{{ product.title }}</span>
-              <span class="bike-builder-v2__review-price" ref="reviewBasePrice">{{ current_variant.price | money }}</span>
+              <span class="bike-builder-v2__review-price" ref="reviewBasePrice">
+                {{- current_variant.price | money -}}
+              </span>
             </div>
             <div ref="reviewUpgrades"></div>
             <div class="bike-builder-v2__review-total">
@@ -306,7 +307,7 @@
         "upgradeHandles": [
           {%- if categories != blank -%}
             {%- for category in categories -%}
-              {{ category.handle.value | default: category.handle | json }}{% unless forloop.last %},{% endunless %}
+              {{ category.product_handle.value | default: category.product_handle | json }}{% unless forloop.last %},{% endunless %}
             {%- endfor -%}
           {%- endif -%}
         ]
@@ -464,13 +465,13 @@
     line-height: 1;
   }
 
-  .bike-builder-v2__progress-step[data-active="true"] .bike-builder-v2__progress-dot {
+  .bike-builder-v2__progress-step[data-active='true'] .bike-builder-v2__progress-dot {
     background: var(--color-foreground, #000);
     border-color: var(--color-foreground, #000);
     color: var(--color-background, #fff);
   }
 
-  .bike-builder-v2__progress-step[data-completed="true"] .bike-builder-v2__progress-dot {
+  .bike-builder-v2__progress-step[data-completed='true'] .bike-builder-v2__progress-dot {
     background: var(--color-foreground, #000);
     border-color: var(--color-foreground, #000);
     color: var(--color-background, #fff);
@@ -485,7 +486,7 @@
     color: var(--color-foreground-secondary, #666);
   }
 
-  .bike-builder-v2__progress-step[data-active="true"] .bike-builder-v2__progress-label {
+  .bike-builder-v2__progress-step[data-active='true'] .bike-builder-v2__progress-label {
     color: var(--color-foreground, #000);
     font-weight: 600;
   }
@@ -500,7 +501,7 @@
     transition: background-color 0.2s;
   }
 
-  .bike-builder-v2__progress-line[data-completed="true"] {
+  .bike-builder-v2__progress-line[data-completed='true'] {
     background: var(--color-foreground, #000);
   }
 
@@ -511,7 +512,7 @@
     gap: var(--padding-md, 16px);
   }
 
-  .bike-builder-v2__step[data-step-visible="true"] {
+  .bike-builder-v2__step[data-step-visible='true'] {
     display: flex;
   }
 
@@ -552,7 +553,7 @@
     display: block;
   }
 
-  .bike-builder-v2__upgrade-card input[type="radio"] {
+  .bike-builder-v2__upgrade-card input[type='radio'] {
     position: absolute !important;
     overflow: hidden;
     width: 1px;
