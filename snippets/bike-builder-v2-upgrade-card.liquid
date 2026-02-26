@@ -1,0 +1,59 @@
+{%- doc -%}
+  Renders a selectable upgrade option card for the V2 bike builder.
+  Reads fields from a bike_v2_upgrade_option metaobject.
+
+  @param {object} option - A bike_v2_upgrade_option metaobject entry
+  @param {string} category_handle - The upgrade category handle (e.g., "wheelset")
+{%- enddoc -%}
+
+{% liquid
+  assign addon_cents = option.price_addon.value | default: 0 | plus: 0
+  assign card_title = option.title.value | default: option.title
+  assign card_image = option.image.value
+%}
+
+<label class="bike-builder-v2__upgrade-card">
+  <input
+    type="radio"
+    name="upgrade-{{ category_handle }}"
+    value="{{ card_title | escape }}"
+    data-upgrade-title="{{ card_title | escape }}"
+    data-upgrade-addon="{{ addon_cents }}"
+    data-upgrade-handle="{{ category_handle }}"
+    class="visually-hidden"
+    on:change="/handleUpgradeSelect"
+  >
+  <div class="bike-builder-v2__upgrade-card-inner">
+    {% if card_image %}
+      <div class="bike-builder-v2__upgrade-card-media">
+        {{
+          card_image
+          | image_url: width: 400
+          | image_tag:
+            loading: 'lazy',
+            widths: '200, 400',
+            sizes: '(min-width: 750px) 200px, 50vw',
+            class: 'bike-builder-v2__upgrade-card-image'
+        }}
+      </div>
+    {% else %}
+      <div class="bike-builder-v2__upgrade-card-media bike-builder-v2__upgrade-card-media--placeholder">
+        {{ 'product-1' | placeholder_svg_tag: 'placeholder-svg' }}
+      </div>
+    {% endif %}
+    <div class="bike-builder-v2__upgrade-card-info">
+      <span class="bike-builder-v2__upgrade-card-title">{{ card_title }}</span>
+      {% if addon_cents > 0 %}
+        <span class="bike-builder-v2__upgrade-card-price">+ {{ addon_cents | money }}</span>
+      {% else %}
+        <span class="bike-builder-v2__upgrade-card-price">+ Free</span>
+      {% endif %}
+    </div>
+    <div class="bike-builder-v2__upgrade-card-check" aria-hidden="true">
+      <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="2"/>
+        <path class="bike-builder-v2__upgrade-card-check-mark" d="M6 10l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+  </div>
+</label>
